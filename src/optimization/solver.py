@@ -368,13 +368,28 @@ def solve_datacenter_model(
     # Because psi is already 0 during PM slots (c25b), this constraint is
     # evaluated on the slot immediately before the PM window starts, which
     # is the last slot where psi still reflects real accumulated wear.
+
     for j in J:
         for k in pm_starts:
-            k_pre = k - 1 if k > 0 else 0
+            if k == 0:
+                mdl.addConstr(
+                    psi_0[j] >= Lambda[j] * v[j, k],
+                    name=f"c26_init_{j}_{k}",
+                )
+            else:
+                mdl.addConstr(
+                    w[j, k-1] >= Lambda[j] * v[j, k],
+                    name=f"c26_{j}_{k}",
+                    )
+
+    # --- Force PM if server starts the horizon at or above threshold ---
+    for j in J:
+        if psi_0[j] >= Lambda[j]:
             mdl.addConstr(
-                psi[j, k_pre] >= Lambda[j] * v[j, k],
-                name=f"c26_{j}_{k}",
+                gp.quicksum(v[j, k] for k in pm_starts) == 1,
+                name = f"force_pm_initial_wear_{j}",
             )
+
 
     # --- #27/#28 Server state-change tracking ---
     for j in J:
