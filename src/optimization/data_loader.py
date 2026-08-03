@@ -169,17 +169,25 @@ def load_data_from_jobs_json(
 
     required_job_params = [
         "d",
-        "r",
         "a",
         "b",
         "q",
-        "rho",
+        "c_late",
     ]
 
     missing_job_params = [
         param for param in required_job_params
         if param not in job_params
     ]
+
+    # Resource demand is either the legacy scalar "r", or the newer
+    # "r_cpu"/"r_mem" split (see solve_datacenter_model's CPU/memory
+    # vector-packing support). At least one form must be present.
+    has_resource_demand = "r" in job_params or (
+        "r_cpu" in job_params and "r_mem" in job_params
+    )
+    if not has_resource_demand:
+        missing_job_params.append("r (or r_cpu and r_mem)")
 
     if missing_job_params:
         raise ValueError(

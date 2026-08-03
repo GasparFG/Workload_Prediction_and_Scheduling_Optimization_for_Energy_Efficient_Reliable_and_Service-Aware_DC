@@ -47,7 +47,11 @@ def extract_hourly_rows(result: Dict[str, Any]) -> List[Dict[str, Any]]:
     J = result["sets"]["J"]
     K = result["sets"]["K"]
     Dk = result["params"]["Dk"]
-    eta = result["params"]["eta"]
+    # Cooling COP. The hybrid-cooling refactor renamed the legacy scalar "eta"
+    # to the air-path COP "eta_air"; fall back to it (and still support the old
+    # per-slot dict form) so the COP column keeps working either way.
+    params = result["params"]
+    eta = params.get("eta", params.get("eta_air"))
     local_slot_to_time = result["helpers"]["slot_to_time"]
 
     y = result["vars"]["y"]
@@ -73,7 +77,7 @@ def extract_hourly_rows(result: Dict[str, Any]) -> List[Dict[str, Any]]:
             "Pcool_W": pcool,
             "Ptot_W": ptot,
             "PUE": ptot / pit if pit > 1e-6 else math.nan,
-            "COP": eta[k],
+            "COP": eta[k] if isinstance(eta, dict) else eta,
         })
     return rows
 
